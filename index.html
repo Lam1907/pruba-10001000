@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Votación</title>
+<style>
+/* ============================================================
+   VARIABLES
+============================================================ */
+:root {
+  --serif: Georgia,'Times New Roman',serif;
+  --sans:  -apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+  --gold:       #c9a84c;
+  --gold-light: #e8d08a;
+  --deep:       #0d0b15;
+  --glass:      rgba(255,255,255,.07);
+  --glass-b:    rgba(201,168,76,.28);
+  --text:       #f0ead6;
+  --muted:      rgba(240,234,214,.55);
+  --red:        #e74c3c;
+  --green:      #2ecc71;
+  --blue:       #3498db;
+  --p1:#2ecc71;--p2:#3498db;--p3:#e74c3c;--p4:#f1c40f;--p5:#9b59b6;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{width:100%;height:100%;}body{width:100%;min-height:100%;background:var(--deep);color:var(--text);font-family:var(--sans);overflow-x:hidden;overflow-y:auto;}#wix-wrap{min-height:100vh;width:100%;}
+
+/* ============================================================
+   SISTEMA DE PANTALLAS
+============================================================ */
+.screen{display:none;width:100%;min-height:100vh;min-height:600px;flex-direction:column;opacity:0;transition:opacity .4s ease;}
+.screen.active{display:flex;}
+.screen.visible{opacity:1;}
+
+/* ============================================================
+   FONDO
+============================================================ */
+.bg-art{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(201,168,76,.10) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 10% 85%,rgba(155,89,182,.13) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 88% 18%,rgba(52,152,219,.09) 0%,transparent 60%);}
+.bg-grid{position:absolute;inset:0;z-index:0;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 79px,rgba(201,168,76,.04) 79px,rgba(201,168,76,.04) 80px),repeating-linear-gradient(90deg,transparent 0,transparent 79px,rgba(201,168,76,.04) 79px,rgba(201,168,76,.04) 80px);}
+.orb{position:absolute;border-radius:50%;filter:blur(72px);pointer-events:none;animation:orbFloat 9s ease-in-out infinite;}
+.o1{width:340px;height:540px;background:rgba(201,168,76,.18);top:-130px;left:-110px;animation-delay:0s;}
+.o2{width:230px;height:400px;background:rgba(155,89,182,.18);top:200px;right:-70px;animation-delay:3s;}
+.o3{width:270px;height:310px;background:rgba(52,152,219,.13);bottom:-90px;left:34%;animation-delay:6s;}
+@keyframes orbFloat{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-28px) rotate(4deg);}}
+
+/* ============================================================
+   ORNAMENTO
+============================================================ */
+.orn{display:flex;align-items:center;justify-content:center;gap:.9rem;margin-bottom:1.5rem;}
+.orn-line{height:1px;width:55px;background:linear-gradient(90deg,transparent,var(--gold));}
+.orn-line.r{background:linear-gradient(90deg,var(--gold),transparent);}
+.orn-diamond{width:7px;height:7px;background:var(--gold);transform:rotate(45deg);}
+
+/* ============================================================
+   ANIMACIONES
+============================================================ */
+@keyframes fadeInUp  {from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes scaleIn   {from{opacity:0;transform:scale(.88);}to{opacity:1;transform:scale(1);}}
+@keyframes iconPop   {from{transform:scale(0) rotate(-20deg);}to{transform:scale(1) rotate(0deg);}}
+@keyframes cardIn    {from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes timerPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+@keyframes dotPulse  {0%,100%{opacity:.25;transform:scale(1);}50%{opacity:1;transform:scale(1.45);}}
+@keyframes spin      {to{transform:rotate(360deg);}}
+@keyframes mystPulse {0%,100%{border-color:rgba(255,255,255,.12);}50%{border-color:rgba(201,168,76,.45);}}
+@keyframes floatCard {0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+@keyframes revealCard{from{opacity:0;transform:scale(.86) translateY(22px);}60%{transform:scale(1.03) translateY(-4px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes titleReveal{from{opacity:0;transform:translateY(-28px) scale(.9);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0);}50%{box-shadow:0 0 0 6px rgba(201,168,76,.25);}}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-9px);}40%{transform:translateX(9px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
+/* ============================================================
+   PANTALLA PRINCIPAL
+============================================================ */
+#screen-main{align-items:center;justify-content:center;position:relative;overflow:hidden;background:#0d0b15;}
+.main-wrap{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.5rem 1.5rem;width:100%;max-width:500px;}
+.main-title{font-family:var(--serif);font-size:clamp(2rem,6vw,3.6rem);font-weight:bold;letter-spacing:.06em;line-height:1.15;color:var(--gold-light);text-shadow:0 0 50px rgba(201,168,76,.55);margin-bottom:.5rem;animation:fadeInUp .7s ease .1s both;}
+.main-sub{font-family:var(--serif);font-style:italic;font-size:clamp(.9rem,2.5vw,1.15rem);color:var(--muted);letter-spacing:.15em;margin-bottom:3rem;animation:fadeInUp .7s ease .2s both;}
+.main-btns{display:flex;flex-direction:column;gap:1.1rem;width:100%;max-width:310px;}
+.btn-main{width:100%;padding:1.1rem 1.5rem;font-family:var(--serif);font-size:.95rem;font-weight:bold;letter-spacing:.2em;color:var(--text);background:rgba(255,255,255,.06);border:1px solid rgba(201,168,76,.28);border-radius:4px;cursor:pointer;transition:background .3s,border-color .3s,transform .25s,box-shadow .3s;}
+.btn-main:hover{background:rgba(201,168,76,.15);border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 30px rgba(201,168,76,.22);}
+.btn-main:active{transform:scale(.97);}
+.btn-main.gold{background:rgba(201,168,76,.17);border-color:var(--gold);animation:fadeInUp .7s ease .3s both;}
+.btn-main.dark{animation:fadeInUp .7s ease .45s both;}
+
+/* ============================================================
+   LOGIN
+============================================================ */
+#screen-login{align-items:center;justify-content:center;position:relative;overflow:hidden;background:#0d0b15;}
+.login-card{position:relative;z-index:10;background:linear-gradient(135deg,rgba(22,18,38,.98),rgba(14,11,26,.98));border:1px solid var(--glass-b);border-radius:10px;padding:2.5rem 2rem;width:100%;max-width:380px;animation:scaleIn .4s cubic-bezier(.23,1,.32,1) both;}
+.login-title{font-family:var(--serif);font-size:1.25rem;font-weight:bold;letter-spacing:.14em;color:var(--gold);text-align:center;margin-bottom:.3rem;}
+.login-sub{font-family:var(--serif);font-style:italic;font-size:.86rem;color:var(--muted);text-align:center;margin-bottom:1.8rem;}
+.login-inp{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(201,168,76,.22);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:.92rem;padding:.72rem 1rem;outline:none;margin-bottom:.85rem;transition:border-color .25s,box-shadow .25s;}
+.login-inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.12);}
+.login-err{font-family:var(--sans);font-size:.78rem;color:var(--red);text-align:center;min-height:1.1rem;margin-bottom:.7rem;opacity:0;transition:opacity .25s;}
+.login-err.show{opacity:1;}
+.btn-login{width:100%;padding:.9rem;font-family:var(--serif);font-size:.9rem;font-weight:bold;letter-spacing:.2em;color:#000;background:linear-gradient(135deg,var(--gold-light),var(--gold));border:none;border-radius:4px;cursor:pointer;transition:opacity .25s,transform .2s,box-shadow .25s;margin-bottom:.75rem;}
+.btn-login:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,.35);}
+.btn-login-back{width:100%;padding:.55rem;font-family:var(--sans);font-size:.75rem;letter-spacing:.1em;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);border-radius:3px;cursor:pointer;transition:color .2s,border-color .2s;}
+.btn-login-back:hover{color:var(--text);border-color:var(--glass-b);}
+
+/* ============================================================
+   MENÚ ADMIN
+============================================================ */
+#screen-admin-menu{align-items:center;justify-content:center;position:relative;overflow:hidden;background:#0d0b15;}
+.amenu-wrap{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;text-align:center;padding:2.5rem 1.5rem;width:100%;max-width:460px;}
+.amenu-title{font-family:var(--serif);font-size:clamp(1.4rem,4vw,2.2rem);font-weight:bold;letter-spacing:.1em;color:var(--gold-light);text-shadow:0 0 30px rgba(201,168,76,.4);margin-bottom:.4rem;animation:fadeInUp .6s ease .1s both;}
+.amenu-sub{font-family:var(--serif);font-style:italic;font-size:.9rem;color:var(--muted);letter-spacing:.1em;margin-bottom:2.5rem;animation:fadeInUp .6s ease .2s both;}
+.amenu-btns{display:flex;flex-direction:column;gap:1rem;width:100%;max-width:300px;}
+.amenu-btn{width:100%;padding:1.05rem 1.5rem;font-family:var(--serif);font-size:.92rem;font-weight:bold;letter-spacing:.18em;color:var(--text);background:rgba(255,255,255,.06);border:1px solid rgba(201,168,76,.28);border-radius:4px;cursor:pointer;transition:background .3s,border-color .3s,transform .25s,box-shadow .3s;}
+.amenu-btn:hover{background:rgba(201,168,76,.16);border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 28px rgba(201,168,76,.2);}
+.amenu-btn:active{transform:scale(.97);}
+.amenu-btn.gold{background:rgba(201,168,76,.16);border-color:var(--gold);animation:fadeInUp .6s ease .3s both;}
+.amenu-btn.dark{animation:fadeInUp .6s ease .45s both;}
+.btn-amenu-back{margin-top:1.5rem;font-family:var(--sans);font-size:.73rem;letter-spacing:.1em;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:.45rem 1.1rem;cursor:pointer;transition:color .2s,border-color .2s;animation:fadeInUp .6s ease .55s both;}
+.btn-amenu-back:hover{color:var(--text);border-color:var(--glass-b);}
+
+/* ============================================================
+   PANEL HEADER
+============================================================ */
+.ph{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.2rem;background:rgba(10,8,20,.97);border-bottom:1px solid var(--glass-b);position:sticky;top:0;z-index:50;flex-shrink:0;gap:.5rem;flex-wrap:wrap;}
+.ph-title{font-family:var(--serif);font-size:.88rem;letter-spacing:.17em;color:var(--gold);font-weight:bold;}
+.ph-right{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
+.btn-ph-back{font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.14);padding:.38rem .9rem;border-radius:3px;cursor:pointer;transition:color .2s,border-color .2s;}
+.btn-ph-back:hover{color:var(--text);border-color:var(--glass-b);}
+
+/* ============================================================
+   BOTÓN "VOLVER AL MENÚ" — flotante en pantallas de votante
+============================================================ */
+.btn-to-menu{
+  font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;
+  color:var(--muted);background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.12);padding:.35rem .85rem;
+  border-radius:20px;cursor:pointer;
+  transition:color .2s,border-color .2s,background .2s;
+  white-space:nowrap;flex-shrink:0;
+}
+.btn-to-menu:hover{color:var(--text);border-color:var(--glass-b);background:rgba(255,255,255,.09);}
+
+/* ============================================================
+   PANEL DE CONTROL
+============================================================ */
+#screen-control{background:var(--deep);}
+.ctrl-body{flex:1;overflow-y:auto;padding:1.2rem;}
+.section{background:var(--glass);border:1px solid var(--glass-b);border-radius:5px;padding:1.2rem;margin-bottom:1.2rem;animation:cardIn .4s ease both;}
+.section:nth-child(1){animation-delay:.05s;}.section:nth-child(2){animation-delay:.12s;}.section:nth-child(3){animation-delay:.18s;}
+.sec-title{font-family:var(--serif);font-size:.72rem;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-bottom:.9rem;font-weight:bold;}
+.row{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;}
+.ifield{background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:3px;color:var(--text);font-family:var(--sans);font-size:.92rem;padding:.55rem .85rem;width:120px;outline:none;transition:border-color .2s;}
+.ifield:focus{border-color:var(--gold);}
+.sbadge{font-family:var(--sans);font-size:.72rem;padding:.3rem .75rem;border-radius:20px;border:1px solid rgba(255,255,255,.15);color:var(--muted);flex-shrink:0;transition:all .35s;}
+.sbadge.active{border-color:rgba(46,204,113,.5);color:var(--green);background:rgba(46,204,113,.1);animation:pulseBadge 2s infinite;}
+.sbadge.ended{border-color:rgba(231,76,60,.5);color:var(--red);background:rgba(231,76,60,.1);}
+@keyframes pulseBadge{0%,100%{box-shadow:0 0 0 0 rgba(46,204,113,0);}50%{box-shadow:0 0 0 4px rgba(46,204,113,.15);}}
+.btn{font-family:var(--serif);font-size:.74rem;letter-spacing:.14em;padding:.62rem 1.2rem;border-radius:3px;border:1px solid;cursor:pointer;white-space:nowrap;font-weight:bold;transition:background .2s,box-shadow .2s,transform .15s;}
+.btn:active{transform:scale(.97);}
+.btn-green{background:rgba(46,204,113,.13);border-color:rgba(46,204,113,.5);color:var(--green);}
+.btn-green:hover{background:rgba(46,204,113,.25);box-shadow:0 0 16px rgba(46,204,113,.2);}
+.btn-gold{background:rgba(201,168,76,.13);border-color:rgba(201,168,76,.5);color:var(--gold);}
+.btn-gold:hover{background:rgba(201,168,76,.25);box-shadow:0 0 16px rgba(201,168,76,.2);}
+.btn-red{background:rgba(231,76,60,.13);border-color:rgba(231,76,60,.5);color:var(--red);}
+.btn-red:hover{background:rgba(231,76,60,.25);}
+.btn-blue{background:rgba(52,152,219,.13);border-color:rgba(52,152,219,.5);color:var(--blue);}
+.btn-blue:hover{background:rgba(52,152,219,.25);}
+.stat-val{font-family:var(--serif);font-size:1.8rem;color:var(--gold);font-weight:bold;}
+.stat-label{font-family:var(--sans);font-size:.72rem;color:var(--muted);letter-spacing:.08em;margin-bottom:.15rem;}
+
+/* Chars grid */
+.chars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.85rem;}
+.char-card-a{background:rgba(255,255,255,.03);border:1px solid var(--glass-b);border-radius:5px;padding:.7rem;display:flex;flex-direction:column;align-items:center;gap:.45rem;transition:border-color .2s,transform .2s;animation:cardIn .35s ease both;}
+.char-card-a:hover{border-color:rgba(201,168,76,.45);transform:translateY(-2px);}
+.img-wrap{width:76px;height:76px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.06);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;transition:background .2s;}
+.img-wrap:hover{background:rgba(201,168,76,.12);}
+.img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+.img-wrap .ov{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:.62rem;letter-spacing:.07em;color:var(--gold);font-family:var(--serif);font-weight:bold;text-align:center;}
+.img-wrap:hover .ov{opacity:1;}
+.no-img{font-size:1.8rem;opacity:.2;color:var(--gold);}
+.char-name-inp{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.16);color:var(--text);font-family:var(--sans);font-size:.8rem;text-align:center;width:100%;padding:.18rem 0;outline:none;transition:border-color .2s;}
+.char-name-inp:focus{border-bottom-color:var(--gold);}
+.char-num-lbl{font-family:var(--serif);font-size:.62rem;color:var(--gold);letter-spacing:.13em;opacity:.65;}
+
+/* ============================================================
+   PANEL DE GESTIÓN POST-VOTACIÓN
+============================================================ */
+#screen-manage{background:var(--deep);}
+.manage-body{flex:1;overflow-y:auto;padding:1.2rem;}
+
+/* Banner de info */
+.manage-banner{
+  background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));
+  border:1px solid rgba(201,168,76,.28);border-radius:6px;
+  padding:.9rem 1.2rem;margin-bottom:1.2rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.7rem;
+  animation:cardIn .4s ease both;
+}
+.manage-banner-title{font-family:var(--serif);font-size:.88rem;font-weight:bold;letter-spacing:.12em;color:var(--gold);}
+.manage-banner-sub{font-family:var(--sans);font-size:.73rem;color:var(--muted);margin-top:.18rem;}
+.manage-stats{display:flex;gap:1.4rem;flex-wrap:wrap;}
+.mstat{text-align:center;}
+.mstat-n{font-family:var(--serif);font-size:1.4rem;font-weight:bold;color:var(--gold);display:block;line-height:1;}
+.mstat-l{font-family:var(--sans);font-size:.63rem;letter-spacing:.07em;color:var(--muted);}
+
+/* Instrucción de movimiento */
+.move-instruction{
+  background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.3);
+  border-radius:5px;padding:.7rem 1rem;margin-bottom:1rem;
+  font-family:var(--sans);font-size:.77rem;color:var(--blue);
+  display:none;animation:fadeInUp .3s ease both;
+}
+.move-instruction.show{display:block;}
+
+/* Grid de parejas */
+.manage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;}
+
+/* Tarjeta de pareja */
+.m-pair-card{
+  border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
+  transition:border-color .3s,opacity .4s,transform .3s;
+  animation:cardIn .4s ease both;
+}
+.m-pair-card.pair-elim{opacity:.35;filter:grayscale(.7);}
+/* Resaltado cuando es destino de movimiento */
+.m-pair-card.move-target{
+  border-color:rgba(52,152,219,.7)!important;
+  box-shadow:0 0 20px rgba(52,152,219,.3);
+  animation:pulse-gold 1.5s infinite;
+}
+
+.m-pair-hdr{
+  padding:.5rem .85rem;display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--serif);font-size:.74rem;letter-spacing:.14em;font-weight:bold;
+}
+.m-pair-hdr-l{display:flex;align-items:center;gap:.4rem;}
+.m-pair-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.m-pair-hdr-r{display:flex;gap:.4rem;align-items:center;}
+
+.m-pair-body{padding:.75rem;background:rgba(0,0,0,.22);display:flex;flex-direction:column;gap:.6rem;}
+
+/* Concursante */
+.m-cont{
+  display:flex;align-items:center;gap:.7rem;
+  padding:.55rem .7rem;border-radius:5px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  cursor:pointer;
+  transition:background .2s,border-color .25s,opacity .35s,transform .2s;
+  user-select:none;
+}
+.m-cont:hover:not(.cont-elim):not(.cont-solo){background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);}
+.m-cont.cont-elim{opacity:.3;cursor:default;}
+.m-cont.cont-solo{border-color:rgba(241,196,15,.4);background:rgba(241,196,15,.07);}
+/* Seleccionado para mover */
+.m-cont.selected-move{
+  border-color:rgba(52,152,219,.8)!important;
+  background:rgba(52,152,219,.15)!important;
+  box-shadow:0 0 14px rgba(52,152,219,.3);
+  animation:pulse-gold 1.5s infinite;
+}
+.m-cont-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:1rem;border:2px solid rgba(255,255,255,.12);transition:border-color .2s;}
+.m-cont-avatar img{width:100%;height:100%;object-fit:cover;}
+.m-cont-info{flex:1;min-width:0;}
+.m-cont-name{font-family:var(--serif);font-size:.88rem;font-weight:bold;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.m-cont-status{font-family:var(--sans);font-size:.63rem;letter-spacing:.07em;margin-top:.12rem;}
+.m-cont-status.ok{color:var(--green);}
+.m-cont-status.out{color:var(--red);}
+.m-cont-status.solo{color:#f1c40f;}
+.m-cont-status.moving{color:var(--blue);}
+.m-cont-actions{display:flex;gap:.35rem;flex-shrink:0;}
+.btn-sm{font-family:var(--sans);font-size:.62rem;letter-spacing:.05em;padding:.28rem .65rem;border-radius:3px;border:1px solid;cursor:pointer;transition:background .18s,box-shadow .18s;white-space:nowrap;}
+.btn-sm-red{background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.4);color:var(--red);}
+.btn-sm-red:hover{background:rgba(231,76,60,.25);}
+.btn-sm-green{background:rgba(46,204,113,.1);border-color:rgba(46,204,113,.35);color:var(--green);}
+.btn-sm-green:hover{background:rgba(46,204,113,.22);}
+.btn-sm-blue{background:rgba(52,152,219,.12);border-color:rgba(52,152,219,.4);color:var(--blue);}
+.btn-sm-blue:hover{background:rgba(52,152,219,.25);}
+
+/* Zona "solo" — concursante sin pareja */
+.solo-pool{
+  background:rgba(241,196,15,.06);border:1px dashed rgba(241,196,15,.3);
+  border-radius:5px;padding:.8rem 1rem;margin-top:1rem;
+  animation:cardIn .4s ease both;
+}
+.solo-pool-title{font-family:var(--serif);font-size:.7rem;letter-spacing:.18em;color:#f1c40f;margin-bottom:.65rem;text-transform:uppercase;}
+.solo-pool-items{display:flex;flex-wrap:wrap;gap:.6rem;}
+.solo-chip{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.4rem .75rem;border-radius:20px;
+  background:rgba(241,196,15,.1);border:1px solid rgba(241,196,15,.3);
+  font-family:var(--sans);font-size:.75rem;color:#f1c40f;
+  cursor:pointer;transition:background .2s,box-shadow .2s;
+}
+.solo-chip:hover{background:rgba(241,196,113,.18);}
+.solo-chip.selected-move{background:rgba(52,152,219,.2);border-color:rgba(52,152,219,.6);color:var(--blue);animation:pulse-gold 1.5s infinite;}
+.solo-chip-avatar{width:24px;height:24px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;}
+.solo-chip-avatar img{width:100%;height:100%;object-fit:cover;}
+
+/* ============================================================
+   SALA DE ESPERA
+============================================================ */
+#screen-waiting{align-items:center;justify-content:center;position:relative;overflow:hidden;background:#0d0b15;}
+.wait-wrap{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;text-align:center;padding:3rem 2rem;max-width:480px;width:100%;}
+.wait-title{font-family:var(--serif);font-size:clamp(1.6rem,5vw,2.6rem);font-weight:bold;letter-spacing:.08em;color:var(--gold-light);text-shadow:0 0 35px rgba(201,168,76,.45);margin-bottom:.55rem;animation:fadeInUp .65s ease .1s both;}
+.wait-sub{font-family:var(--serif);font-style:italic;font-size:clamp(.9rem,2.5vw,1.1rem);color:var(--muted);letter-spacing:.12em;margin-bottom:2.5rem;animation:fadeInUp .65s ease .2s both;}
+.wait-ring{width:88px;height:88px;border-radius:50%;border:2px solid rgba(201,168,76,.15);border-top-color:var(--gold);animation:spin 2s linear infinite;margin-bottom:2rem;}
+.wait-dots{display:flex;gap:.75rem;align-items:center;justify-content:center;margin-bottom:1.8rem;animation:fadeInUp .65s ease .3s both;}
+.w-dot{width:10px;height:10px;border-radius:50%;background:var(--gold);animation:dotPulse 1.6s ease-in-out infinite;}
+.w-dot:nth-child(2){animation-delay:.28s;}.w-dot:nth-child(3){animation-delay:.56s;}
+.wait-msg{font-family:var(--sans);font-size:.76rem;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;line-height:1.8;animation:fadeInUp .65s ease .4s both;}
+
+/* ============================================================
+   VOTACIÓN
+============================================================ */
+#screen-vote{background:var(--deep);}
+.vote-body{flex:1;overflow-y:auto;padding:1rem;}
+.msg-bar{text-align:center;padding:.7rem 1rem;font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--gold-light);background:rgba(201,168,76,.07);border-bottom:1px solid var(--glass-b);min-height:2.8rem;display:flex;align-items:center;justify-content:center;transition:all .35s ease;}
+.pairs-bar{display:flex;flex-wrap:wrap;gap:.45rem;padding:.65rem 1rem;background:rgba(255,255,255,.02);border-bottom:1px solid var(--glass-b);}
+.pip{display:flex;align-items:center;gap:.28rem;font-family:var(--sans);font-size:.68rem;letter-spacing:.07em;color:var(--muted);padding:.22rem .55rem;border-radius:20px;border:1px solid rgba(255,255,255,.09);transition:all .3s;}
+.pip.done{color:var(--text);border-color:rgba(255,255,255,.2);}
+.pip.curr{color:var(--text);background:rgba(255,255,255,.07);}
+.pip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.vote-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.75rem;padding:.85rem 0;}
+.char-card-v{background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.09);border-radius:7px;padding:.7rem .5rem;display:flex;flex-direction:column;align-items:center;gap:.45rem;cursor:pointer;user-select:none;position:relative;overflow:hidden;transition:transform .22s,border-color .22s,background .22s,box-shadow .22s;animation:cardIn .3s ease both;}
+.char-card-v:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.22);}
+.char-card-v:active{transform:scale(.97);}
+.char-card-v.sel-half{transform:translateY(-2px);border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);}
+.char-card-v.p1{border-color:var(--p1);background:rgba(46,204,113,.15);box-shadow:0 3px 18px rgba(46,204,113,.22);}
+.char-card-v.p2{border-color:var(--p2);background:rgba(52,152,219,.15);box-shadow:0 3px 18px rgba(52,152,219,.22);}
+.char-card-v.p3{border-color:var(--p3);background:rgba(231,76,60,.15);box-shadow:0 3px 18px rgba(231,76,60,.22);}
+.char-card-v.p4{border-color:var(--p4);background:rgba(241,196,15,.15);box-shadow:0 3px 18px rgba(241,196,15,.22);}
+.char-card-v.p5{border-color:var(--p5);background:rgba(155,89,182,.15);box-shadow:0 3px 18px rgba(155,89,182,.22);}
+.pair-badge{position:absolute;top:4px;right:4px;width:17px;height:17px;border-radius:50%;font-size:.58rem;font-weight:bold;display:flex;align-items:center;justify-content:center;color:#000;}
+.char-avatar{width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:rgba(255,255,255,.18);overflow:hidden;flex-shrink:0;}
+.char-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.char-name-v{font-family:var(--serif);font-size:.88rem;font-weight:bold;text-align:center;line-height:1.2;}
+.char-num-v{font-family:var(--serif);font-size:.62rem;color:var(--gold);letter-spacing:.1em;opacity:.6;}
+.vote-footer{padding:.85rem 1rem;border-top:1px solid var(--glass-b);display:flex;justify-content:center;flex-shrink:0;}
+.btn-submit{font-family:var(--serif);font-size:.88rem;font-weight:bold;letter-spacing:.18em;padding:.85rem 2rem;background:rgba(201,168,76,.15);border:1px solid var(--gold);border-radius:3px;color:var(--gold);cursor:pointer;transition:background .25s,box-shadow .25s,transform .2s;width:100%;max-width:300px;}
+.btn-submit:hover{background:rgba(201,168,76,.28);box-shadow:0 0 25px rgba(201,168,76,.25);transform:translateY(-1px);}
+.btn-submit:active{transform:scale(.98);}
+.closed-box{text-align:center;padding:3rem 1.5rem;animation:fadeInUp .5s ease both;}
+.closed-title{font-family:var(--serif);font-size:1.3rem;color:var(--red);letter-spacing:.14em;margin-bottom:.5rem;font-weight:bold;}
+.closed-sub{font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--muted);}
+.success-box{text-align:center;padding:3rem 1.5rem;animation:scaleIn .5s cubic-bezier(.23,1,.32,1) both;}
+.success-icon{font-size:3.5rem;margin-bottom:.8rem;display:block;animation:iconPop .5s cubic-bezier(.23,1,.32,1) .1s both;}
+.success-title{font-family:var(--serif);font-size:1.4rem;color:var(--gold);letter-spacing:.14em;margin-bottom:.6rem;font-weight:bold;}
+.success-sub{font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--muted);}
+
+/* ============================================================
+   TRANSMISIÓN
+============================================================ */
+#screen-broadcast{background:linear-gradient(160deg,#070511 0%,#0c091a 100%);position:relative;overflow:hidden;}
+#screen-broadcast::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 90% 45% at 50% 0%,rgba(201,168,76,.08) 0%,transparent 60%),radial-gradient(ellipse 55% 35% at 50% 100%,rgba(155,89,182,.06) 0%,transparent 60%);}
+
+/* Layout: área principal + sidebar */
+.bc-layout{
+  position:relative;z-index:1;flex:1;
+  display:flex;flex-direction:row;
+  overflow:hidden;
+}
+.bc-main{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;padding:1.2rem 1rem;gap:1.2rem;
+  overflow-y:auto;
+}
+/* Sidebar de eliminados */
+.bc-sidebar{
+  width:0;overflow:hidden;
+  background:rgba(0,0,0,.35);
+  border-left:1px solid rgba(231,76,60,.2);
+  transition:width .4s ease;
+  flex-shrink:0;display:flex;flex-direction:column;
+}
+.bc-sidebar.visible{width:200px;}
+.bc-sidebar-title{
+  padding:.75rem 1rem;
+  font-family:var(--serif);font-size:.68rem;letter-spacing:.2em;
+  color:var(--red);text-transform:uppercase;font-weight:bold;
+  border-bottom:1px solid rgba(231,76,60,.2);flex-shrink:0;
+}
+.bc-sidebar-list{flex:1;overflow-y:auto;padding:.5rem 0;}
+.bc-elim-item{
+  display:flex;align-items:center;gap:.55rem;
+  padding:.5rem .85rem;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  animation:slideInRight .3s ease both;
+}
+.bc-elim-avatar{width:30px;height:30px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;filter:grayscale(1);}
+.bc-elim-avatar img{width:100%;height:100%;object-fit:cover;}
+.bc-elim-name{font-family:var(--sans);font-size:.73rem;color:rgba(240,234,214,.45);line-height:1.2;}
+.bc-elim-badge{font-size:.55rem;color:var(--red);letter-spacing:.05em;display:block;margin-top:.1rem;}
+
+/* Timer y votos */
+.bc-top-row{display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap;width:100%;}
+.timer-lbl{font-family:var(--sans);font-size:.68rem;letter-spacing:.22em;color:var(--muted);text-align:center;margin-bottom:.25rem;}
+.timer-wait{font-family:var(--serif);font-style:italic;font-size:.9rem;color:var(--muted);text-align:center;}
+.timer-big{font-family:var(--serif);font-size:clamp(2.8rem,10vw,5.5rem);font-weight:bold;letter-spacing:.04em;color:var(--text);text-shadow:0 0 38px rgba(201,168,76,.45);text-align:center;line-height:1;transition:color .4s;}
+.timer-big.red{color:var(--red);text-shadow:0 0 32px rgba(231,76,60,.6);animation:timerPulse .5s infinite;}
+.votes-counter{text-align:center;}
+.votes-n{font-family:var(--serif);font-size:2.4rem;font-weight:bold;color:var(--gold);display:block;line-height:1;transition:transform .18s;}
+.votes-l{font-family:var(--sans);font-size:.7rem;letter-spacing:.16em;color:var(--muted);}
+.bc-divider{width:100%;max-width:600px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.3),transparent);}
+.bc-section-lbl{font-family:var(--sans);font-size:.68rem;letter-spacing:.25em;color:var(--gold);text-transform:uppercase;text-align:center;opacity:.7;}
+.bc-alive-info{font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;color:var(--muted);text-align:center;}
+.bc-alive-info strong{color:var(--green);font-family:var(--serif);}
+
+/* Pairs grid en transmisión — centrado */
+.bc-pairs-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,260px));
+  gap:1rem;justify-content:center;
+  width:100%;max-width:900px;
+}
+.bc-pair-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;overflow:hidden;transition:all .4s;}
+.bc-pair-card.floating{animation:floatCard 4s ease-in-out infinite;}
+.bc-pair-card:nth-child(1){animation-delay:0s;}.bc-pair-card:nth-child(2){animation-delay:.65s;}.bc-pair-card:nth-child(3){animation-delay:1.3s;}.bc-pair-card:nth-child(4){animation-delay:1.95s;}.bc-pair-card:nth-child(5){animation-delay:2.6s;}
+.bc-pair-card.pair-out{opacity:.28;border-color:rgba(231,76,60,.2)!important;filter:grayscale(.9);animation:none!important;}
+.bc-pair-hdr{padding:.45rem .85rem;display:flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--serif);font-size:.72rem;letter-spacing:.16em;font-weight:bold;}
+.bc-pair-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.bc-pair-body{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.75rem;background:rgba(0,0,0,.22);}
+.bc-pm{flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem;max-width:85px;}
+.bc-pm-img{width:54px;height:54px;border-radius:50%;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.bc-pm-img.myst{border-style:dashed;animation:mystPulse 2.5s ease-in-out infinite;}
+.bc-pm-img.out{filter:grayscale(1);opacity:.4;}
+.bc-pm-img img{width:100%;height:100%;object-fit:cover;}
+.bc-pm-name{font-family:var(--serif);font-size:.76rem;font-weight:bold;text-align:center;line-height:1.2;}
+.bc-pm-name.out{opacity:.4;text-decoration:line-through;}
+.bc-x{font-family:var(--sans);font-size:1.4rem;font-weight:bold;color:var(--gold);opacity:.55;flex-shrink:0;width:24px;text-align:center;}
+.qmark{font-family:var(--serif);font-size:1.8rem;color:var(--gold);opacity:.28;}
+.bc-status-bar{padding:.28rem .7rem;font-family:var(--sans);font-size:.6rem;letter-spacing:.07em;background:rgba(231,76,60,.13);border-top:1px solid rgba(231,76,60,.22);color:var(--red);text-align:center;}
+
+/* ============================================================
+   REVELACIÓN FINAL
+============================================================ */
+#screen-reveal{background:linear-gradient(155deg,#060410 0%,#0b0917 100%);position:relative;overflow:hidden;align-items:center;justify-content:flex-start;flex-direction:column;}
+#screen-reveal::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(201,168,76,.12) 0%,transparent 60%);}
+.reveal-inner{position:relative;z-index:1;width:100%;max-width:950px;padding:2rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem;}
+.reveal-title{font-family:var(--serif);font-size:clamp(1.4rem,5vw,3rem);font-weight:bold;letter-spacing:.2em;color:var(--gold);text-shadow:0 0 45px rgba(201,168,76,.65);text-align:center;animation:titleReveal 1s cubic-bezier(.23,1,.32,1) .1s both;}
+.reveal-total{font-family:var(--sans);font-size:.78rem;letter-spacing:.2em;color:var(--muted);text-align:center;text-transform:uppercase;animation:fadeInUp .6s ease .4s both;}
+.reveal-total strong{font-family:var(--serif);font-size:1.5rem;color:var(--gold);display:block;margin-top:.2rem;}
+.reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.3rem;width:100%;justify-content:center;}
+.reveal-card{background:linear-gradient(135deg,rgba(22,18,38,.98),rgba(14,11,26,.98));border-radius:10px;overflow:hidden;animation:revealCard .9s cubic-bezier(.23,1,.32,1) both;}
+.reveal-card:nth-child(1){animation-delay:.55s;}.reveal-card:nth-child(2){animation-delay:.78s;}.reveal-card:nth-child(3){animation-delay:1.0s;}.reveal-card:nth-child(4){animation-delay:1.22s;}.reveal-card:nth-child(5){animation-delay:1.44s;}
+.reveal-hdr{padding:.7rem 1.2rem;display:flex;align-items:center;gap:.6rem;font-family:var(--serif);font-size:.8rem;letter-spacing:.18em;font-weight:bold;}
+.reveal-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.reveal-body{display:flex;align-items:center;justify-content:center;gap:1rem;padding:1.3rem;}
+.reveal-member{display:flex;flex-direction:column;align-items:center;gap:.6rem;flex:1;}
+.reveal-avatar{width:84px;height:84px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 4px 22px rgba(0,0,0,.45);}
+.reveal-avatar img{width:100%;height:100%;object-fit:cover;}
+.reveal-name{font-family:var(--serif);font-size:1rem;font-weight:bold;text-align:center;line-height:1.2;}
+.reveal-x{font-family:var(--sans);font-size:2.2rem;font-weight:bold;color:var(--gold);opacity:.5;flex-shrink:0;}
+
+/* ============================================================
+   CORTINAJE
+============================================================ */
+#curtain{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9980;background:#000;opacity:0;pointer-events:none;transition:opacity .75s ease;}
+#curtain.show{opacity:1;pointer-events:all;}
+
+/* ============================================================
+   MODALES
+============================================================ */
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.82);z-index:9990;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .22s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:linear-gradient(135deg,#161224,#0f0d1c);border:1px solid var(--glass-b);border-radius:7px;padding:1.8rem;width:100%;max-width:380px;transform:scale(.94);transition:transform .22s;}
+.overlay.open .modal{transform:scale(1);}
+.modal-title{font-family:var(--serif);font-size:1rem;font-weight:bold;letter-spacing:.14em;color:var(--gold);margin-bottom:.6rem;}
+.modal-msg{font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--muted);margin-bottom:1.3rem;line-height:1.5;}
+.modal-acts{display:flex;gap:.65rem;justify-content:flex-end;}
+.modal-opts{display:flex;flex-direction:column;gap:.45rem;margin-bottom:1rem;}
+.modal-opt{font-family:var(--sans);font-size:.82rem;padding:.62rem .9rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:3px;color:var(--text);cursor:pointer;text-align:left;transition:background .2s,border-color .2s;}
+.modal-opt:hover{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3);}
+.modal-inp{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--glass-b);border-radius:3px;color:var(--text);font-family:var(--sans);font-size:.88rem;padding:.55rem .85rem;outline:none;margin-bottom:.8rem;transition:border-color .2s;}
+.modal-inp:focus{border-color:var(--gold);}
+.btn-no{font-family:var(--serif);font-size:.74rem;font-weight:bold;letter-spacing:.12em;padding:.58rem 1.1rem;border-radius:3px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;transition:color .2s;}
+.btn-no:hover{color:var(--text);}
+
+
+/* Botón secreto estrella en transmisión */
+#btn-star-back {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 9999;
+  width: 28px;
+  height: 28px;
+  display: none;              /* oculto por defecto */
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: rgba(201,168,76,.35);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  transition: color .25s, transform .2s;
+  padding: 0;
+}
+#btn-star-back:hover {
+  color: rgba(201,168,76,.85);
+  transform: scale(1.2) rotate(20deg);
+}
+/* Visible solo cuando se muestra la transmisión — gestionado por JS */
+
+/* Toast */
+.notif{position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%) translateY(14px);background:linear-gradient(135deg,rgba(18,14,30,.98),rgba(12,10,22,.98));border:1px solid var(--glass-b);border-radius:4px;padding:.65rem 1.4rem;font-family:var(--sans);font-size:.8rem;letter-spacing:.04em;color:var(--text);z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s;white-space:nowrap;max-width:92vw;text-align:center;}
+.notif.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#file-inp{display:none;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.22);border-radius:2px;}
+</style>
+</head>
+<body>
+<!-- Wrapper raíz: asegura visibilidad en Wix/iframes -->
+<div id="wix-wrap" style="min-height:100vh;width:100%;position:relative;opacity:1;visibility:visible;display:block;">
+<div id="curtain"></div>
+
+<!-- ══════ 1. PANTALLA PRINCIPAL ══════ -->
+<div id="screen-main" class="screen active visible">
+  <div class="bg-art"></div><div class="bg-grid"></div>
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <div class="main-wrap">
+    <div class="orn"><div class="orn-line"></div><div class="orn-diamond"></div><div class="orn-line r"></div></div>
+    <h1 class="main-title">Sistema de<br>Votación</h1>
+    <p class="main-sub">Emparejamiento de Personajes</p>
+    <div class="main-btns">
+      <button class="btn-main gold" onclick="goVotar()">✦ &nbsp;VOTACIÓN</button>
+      <button class="btn-main dark" onclick="goAdmin()">◈ &nbsp;ADMINISTRADOR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ 2. LOGIN ══════ -->
+<div id="screen-login" class="screen">
+  <div class="bg-art"></div><div class="bg-grid"></div>
+  <div class="orb o1"></div><div class="orb o2"></div>
+  <div class="login-card">
+    <div class="orn"><div class="orn-line"></div><div class="orn-diamond"></div><div class="orn-line r"></div></div>
+    <div class="login-title">Acceso Restringido</div>
+    <div class="login-sub">Panel de Administrador</div>
+    <input class="login-inp" id="login-user" type="text"     placeholder="Usuario"    autocomplete="off">
+    <input class="login-inp" id="login-pass" type="password" placeholder="Contraseña" autocomplete="off">
+    <div class="login-err" id="login-err">Usuario o contraseña incorrectos</div>
+    <button class="btn-login" onclick="doLogin()">INGRESAR</button>
+    <button class="btn-login-back" onclick="go('main')">← Volver al inicio</button>
+  </div>
+</div>
+
+<!-- ══════ 3. MENÚ ADMIN ══════ -->
+<div id="screen-admin-menu" class="screen">
+  <div class="bg-art"></div><div class="bg-grid"></div>
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <div class="amenu-wrap">
+    <div class="orn"><div class="orn-line"></div><div class="orn-diamond"></div><div class="orn-line r"></div></div>
+    <div class="amenu-title">Panel de Administrador</div>
+    <div class="amenu-sub">Selecciona una opción</div>
+    <div class="amenu-btns">
+      <button class="amenu-btn gold" onclick="go('control')">◈ &nbsp;PANEL DE CONTROL</button>
+      <button class="amenu-btn dark" onclick="go('broadcast')">⬡ &nbsp;TRANSMISIÓN</button>
+    </div>
+    <button class="btn-amenu-back" onclick="go('main')">← Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- ══════ 4. PANEL DE CONTROL ══════ -->
+<div id="screen-control" class="screen">
+  <div class="ph">
+    <span class="ph-title">◈ PANEL DE CONTROL</span>
+    <div class="ph-right">
+      <button class="btn-ph-back" onclick="go('admin-menu')">← Menú admin</button>
+    </div>
+  </div>
+  <div class="ctrl-body">
+    <div class="section">
+      <div class="sec-title">Control de Votación</div>
+      <div class="row" style="margin-bottom:.8rem">
+        <label style="font-size:.78rem;color:var(--muted);font-family:var(--sans)">Duración (seg):</label>
+        <input type="number" id="inp-dur" class="ifield" value="120" min="5" max="9999">
+        <span class="sbadge" id="sbadge">Inactiva</span>
+      </div>
+      <div class="row">
+        <button class="btn btn-green" onclick="doStartVote()">▶ INICIAR VOTACIÓN</button>
+        <button class="btn btn-red"   onclick="doReset()">↺ REINICIAR</button>
+        <button class="btn btn-gold"  onclick="doSave()">✦ GUARDAR CAMBIOS</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">Estadísticas en Vivo</div>
+      <div class="row" style="gap:2rem">
+        <div><div class="stat-label">Votos registrados</div><div class="stat-val" id="a-count">0</div></div>
+        <div><div class="stat-label">Tiempo restante</div>  <div class="stat-val" id="a-time">—</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">Personajes</div>
+      <div class="chars-grid" id="chars-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ 5. GESTIÓN POST-VOTACIÓN ══════ -->
+<div id="screen-manage" class="screen">
+  <div class="ph">
+    <span class="ph-title">⚡ GESTIÓN DEL EVENTO</span>
+    <div class="ph-right">
+      <button class="btn btn-red"  style="font-size:.68rem;padding:.35rem .85rem" onclick="cancelMove()">✕ Cancelar selección</button>
+      <button class="btn-ph-back" onclick="go('admin-menu')">← Menú admin</button>
+    </div>
+  </div>
+  <div class="manage-body">
+    <div class="manage-banner">
+      <div>
+        <div class="manage-banner-title">Control de Combinaciones</div>
+        <div class="manage-banner-sub">Toca un concursante para eliminarlo o moverlo. Los cambios se reflejan en transmisión.</div>
+      </div>
+      <div class="manage-stats">
+        <div class="mstat"><span class="mstat-n" id="stat-pairs">5</span><span class="mstat-l">Combinaciones activas</span></div>
+        <div class="mstat"><span class="mstat-n" id="stat-conts">10</span><span class="mstat-l">Concursantes activos</span></div>
+      </div>
+    </div>
+    <!-- Instrucción dinámica de movimiento -->
+    <div class="move-instruction" id="move-instr"></div>
+    <!-- Concursantes sin pareja -->
+    <div class="solo-pool" id="solo-pool" style="display:none">
+      <div class="solo-pool-title">🧩 Participantes disponibles (sin pareja)</div>
+      <div class="solo-pool-items" id="solo-pool-items"></div>
+    </div>
+    <!-- Grid de parejas -->
+    <div class="manage-grid" id="manage-grid"></div>
+  </div>
+</div>
+
+<!-- ══════ 6. SALA DE ESPERA ══════ -->
+<div id="screen-waiting" class="screen">
+  <div class="bg-art"></div><div class="bg-grid"></div>
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <div class="ph" style="position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(10,8,20,.95);">
+    <span class="ph-title">Sala de Espera</span>
+    <button class="btn-to-menu" onclick="go('main')">← Menú principal</button>
+  </div>
+  <div class="wait-wrap" style="padding-top:5rem">
+    <div class="orn"><div class="orn-line"></div><div class="orn-diamond"></div><div class="orn-line r"></div></div>
+    <div class="wait-title">Sala de Espera</div>
+    <div class="wait-sub">El evento está a punto de comenzar</div>
+    <div class="wait-ring"></div>
+    <div class="wait-dots"><div class="w-dot"></div><div class="w-dot"></div><div class="w-dot"></div></div>
+    <div class="wait-msg">Esperando que el administrador<br>inicie la votación</div>
+  </div>
+</div>
+
+<!-- ══════ 7. VOTACIÓN ══════ -->
+<div id="screen-vote" class="screen">
+  <div class="ph">
+    <span class="ph-title">✦ VOTACIÓN</span>
+    <button class="btn-to-menu" onclick="go('main')">← Menú principal</button>
+  </div>
+  <div class="msg-bar" id="msg-bar">Cargando...</div>
+  <div class="pairs-bar" id="pairs-bar"></div>
+  <div class="vote-body" id="vote-body">
+    <div class="vote-grid" id="vote-grid"></div>
+  </div>
+  <div class="vote-footer" id="vote-footer">
+    <button class="btn-submit" onclick="submitVote()">REGISTRAR VOTO</button>
+  </div>
+</div>
+
+<!-- ══════ 8. TRANSMISIÓN ══════ -->
+<div id="screen-broadcast" class="screen">
+  <div class="ph">
+    <span class="ph-title">⬡ TRANSMISIÓN EN VIVO</span>
+  </div>
+  <button id="btn-star-back" onclick="go('admin-menu')" title="Menú" aria-label="Volver al menú">&#9733;</button>
+  <div class="bc-layout">
+    <!-- Área principal -->
+    <div class="bc-main">
+      <div class="bc-top-row">
+        <div>
+          <div class="timer-lbl">TIEMPO RESTANTE</div>
+          <div class="timer-big" id="bc-timer">—</div>
+          <div class="timer-wait" id="bc-wait">En espera de inicio...</div>
+        </div>
+        <div class="votes-counter">
+          <span class="votes-n" id="bc-count">0</span>
+          <span class="votes-l">VOTOS REGISTRADOS</span>
+        </div>
+      </div>
+      <div class="bc-alive-info" id="bc-alive-info" style="display:none"></div>
+      <div class="bc-divider"></div>
+      <div class="bc-section-lbl" id="bc-section-lbl">COMBINACIONES</div>
+      <div class="bc-pairs-grid" id="bc-pairs"></div>
+    </div>
+    <!-- Sidebar de eliminados -->
+    <div class="bc-sidebar" id="bc-sidebar">
+      <div class="bc-sidebar-title">✕ Eliminados</div>
+      <div class="bc-sidebar-list" id="bc-elim-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ 9. REVELACIÓN FINAL ══════ -->
+<div id="screen-reveal" class="screen">
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <div class="reveal-inner">
+    <div class="reveal-title">✦ RESULTADOS FINALES ✦</div>
+    <div class="reveal-total">Total de votos registrados<strong id="reveal-total-n">0</strong></div>
+    <div class="reveal-grid" id="reveal-grid"></div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR -->
+<div class="overlay" id="ov-confirm">
+  <div class="modal">
+    <div class="modal-title" id="c-title">Confirmar</div>
+    <div class="modal-msg"   id="c-msg"></div>
+    <div class="modal-acts">
+      <button class="btn-no" onclick="closeOv('ov-confirm')">No</button>
+      <button class="btn btn-gold" onclick="confirmYes()">Sí</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMAGEN -->
+<div class="overlay" id="ov-img">
+  <div class="modal">
+    <div class="modal-title">Editar Imagen</div>
+    <div class="modal-msg" id="img-lbl"></div>
+    <div class="modal-opts">
+      <button class="modal-opt" onclick="pickFile()">📁 &nbsp;Importar archivo desde dispositivo</button>
+      <button class="modal-opt" onclick="showUrlBox()">🔗 &nbsp;Insertar URL de imagen</button>
+      <button class="modal-opt" onclick="clearImg()">🗑 &nbsp;Borrar imagen actual</button>
+    </div>
+    <div id="url-box" style="display:none">
+      <input class="modal-inp" id="url-inp" type="text" placeholder="https://ejemplo.com/imagen.jpg">
+      <button class="btn btn-gold" style="width:100%;text-align:center" onclick="applyUrl()">Aplicar URL</button>
+    </div>
+    <button class="btn-no" style="width:100%;margin-top:.7rem;text-align:center" onclick="closeOv('ov-img')">Cancelar</button>
+  </div>
+</div>
+
+<input type="file" id="file-inp" accept="image/*">
+<div class="notif" id="notif"></div>
+
+<script>
+/* ================================================================
+   CONSTANTES
+================================================================ */
+var PH = ['#2ecc71','#3498db','#e74c3c','#f1c40f','#9b59b6'];
+var PL = ['Pareja 1','Pareja 2','Pareja 3','Pareja 4','Pareja 5'];
+/* Etiqueta visible: "Participante N" (1-based) */
+function pLabel(charId){ return 'Participante '+(charId+1); }
+
+var AUTH_USER = 'Montaje_2026';
+var AUTH_PASS = 'DanzadMalditos26';
+
+/* ================================================================
+   ESTADO GLOBAL
+   S.chars[i].name  → nombre editable (pre-votación)
+   S.chars[i].img   → imagen del participante
+   S.pairs[i]       → {c1:id|null, c2:id|null, dead:false}
+                      dead=true  → pareja eliminada completa
+   S.eliminated     → [charId,…] historial de eliminados
+   S.solo           → [charId,…] sin pareja, disponibles para mover
+================================================================ */
+var S = {
+  chars: (function(){
+    var a=[];
+    for(var i=0;i<10;i++) a.push({id:i, name:'Participante '+(i+1), img:''});
+    return a;
+  })(),
+  dur:120, startTs:null, active:false, ended:false,
+  votes:[], count:0,
+  pairs:[],
+  eliminated:[],
+  solo:[]
+};
+
+/* Variables de UI */
+var vSel=[], editId=null, tickId=null, waitId=null;
+var cbYes=null, nTimer=null;
+
+/* Estado de movimiento */
+var MV = { on:false, charId:null, srcPair:-1, srcSlot:-1 };
+
+/* ================================================================
+   UTILIDADES
+================================================================ */
+function esc(s){
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtSec(s){
+  var m=Math.floor(s/60)+''; if(m.length<2) m='0'+m;
+  var r=Math.floor(s%60)+''; if(r.length<2) r='0'+r;
+  return m+':'+r;
+}
+function timeLeft(){
+  if(!S.startTs) return 0;
+  return Math.max(0, S.dur-(Date.now()-S.startTs)/1000);
+}
+/* Nombre para mostrar: el nombre editable del char, o el label por defecto */
+function cName(charId){
+  if(charId===null) return '—';
+  var c=S.chars[charId];
+  return c ? esc(c.name||pLabel(charId)) : pLabel(charId);
+}
+/* Imagen de un char */
+function cImg(charId, size){
+  var c=S.chars[charId];
+  if(c && c.img){
+    return '<img src="'+esc(c.img)+'" style="width:'+size+'px;height:'+size+'px;object-fit:cover;border-radius:50%;">';
+  }
+  return '<span style="font-size:'+(size*.5)+'px;opacity:.3;line-height:1">◈</span>';
+}
+
+/* ================================================================
+   NAVEGACIÓN con fade
+================================================================ */
+function go(name){
+  var cur=document.querySelector('.screen.active');
+  if(cur){ cur.classList.remove('visible'); setTimeout(function(){ cur.classList.remove('active'); _show(name); },340); }
+  else _show(name);
+}
+function _show(name){
+  var el=document.getElementById('screen-'+name);
+  if(!el) return;
+  el.classList.add('active');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  if(name==='control')   { renderControl(); }
+  if(name==='manage')    { cancelMV(); buildManage(); }
+  if(name==='broadcast') { renderBC(); }
+  if(name==='waiting')   { startWaitCheck(); }
+  if(name==='vote')      { initVote(); }
+  if(name==='login')     { resetLogin(); }
+  /* Estrella secreta: visible SOLO en broadcast */
+  var sb=document.getElementById('btn-star-back');
+  if(sb) sb.style.display=(name==='broadcast')?'flex':'none';
+}
+
+/* ================================================================
+   BOTONES PANTALLA PRINCIPAL
+================================================================ */
+function goVotar(){
+  if(S.active) go('vote');
+  else if(S.ended) go('vote');
+  else go('waiting');
+}
+function goAdmin(){ go('login'); }
+
+/* ================================================================
+   LOGIN — nunca guarda sesión
+================================================================ */
+function resetLogin(){
+  var u=document.getElementById('login-user');
+  var p=document.getElementById('login-pass');
+  var e=document.getElementById('login-err');
+  if(u) u.value=''; if(p) p.value='';
+  if(e) e.classList.remove('show');
+  setTimeout(function(){ if(u) u.focus(); },400);
+}
+function doLogin(){
+  var u=(document.getElementById('login-user').value||'').trim();
+  var p=(document.getElementById('login-pass').value||'').trim();
+  var err=document.getElementById('login-err');
+  if(u===AUTH_USER && p===AUTH_PASS){
+    if(err) err.classList.remove('show');
+    go('admin-menu');
+  } else {
+    if(err) err.classList.add('show');
+    var card=document.querySelector('.login-card');
+    if(card){ card.style.animation='shake .4s ease'; setTimeout(function(){ card.style.animation=''; },450); }
+  }
+}
+/* Estos listeners se registran de forma segura */
+(function(){
+  var lu=document.getElementById('login-user');
+  var lp=document.getElementById('login-pass');
+  if(lu) lu.addEventListener('keydown',function(e){if(e.key==='Enter'&&lp) lp.focus();});
+  if(lp) lp.addEventListener('keydown',function(e){if(e.key==='Enter') doLogin();});
+})();
+
+/* ================================================================
+   SALA DE ESPERA
+================================================================ */
+function startWaitCheck(){
+  if(waitId) clearInterval(waitId);
+  waitId=setInterval(function(){ if(S.active){ clearInterval(waitId); curtainTo('vote'); } },1000);
+}
+function curtainTo(dest){
+  var c=document.getElementById('curtain');
+  c.classList.add('show');
+  setTimeout(function(){ go(dest); setTimeout(function(){ c.classList.remove('show'); },400); },600);
+}
+
+/* ================================================================
+   TIMER GLOBAL
+================================================================ */
+function startTick(){
+  if(tickId) clearInterval(tickId);
+  tickId=setInterval(tick,500);
+}
+function tick(){
+  if(!S.active) return;
+  var left=timeLeft(), fmt=fmtSec(left);
+  var at=document.getElementById('a-time');
+  var bt=document.getElementById('bc-timer');
+  var bw=document.getElementById('bc-wait');
+  var ac=document.getElementById('a-count');
+  var bc=document.getElementById('bc-count');
+  if(at) at.textContent=fmt;
+  if(bt){ bt.textContent=fmt; bt.classList[left<=10&&left>0?'add':'remove']('red'); }
+  if(bw) bw.style.display='none';
+  if(ac) ac.textContent=S.count;
+  if(bc){ bc.textContent=S.count; bc.style.transform='scale(1.15)'; setTimeout(function(){bc.style.transform='';},150); }
+  if(left<=0) endVoting();
+}
+
+/* ================================================================
+   FIN DE VOTACIÓN
+================================================================ */
+function endVoting(){
+  if(S.ended) return;
+  S.active=false; S.ended=true;
+  /* Calcular parejas */
+  var res=computeResults();
+  S.pairs=[]; S.solo=[]; S.eliminated=[];
+  for(var i=0;i<5;i++){
+    S.pairs.push({ c1:res[i]?res[i].c1:null, c2:res[i]?res[i].c2:null, dead:false });
+  }
+  refreshBadge();
+  /* Redirigir panel de control → gestión */
+  if(document.getElementById('screen-control').classList.contains('active')){
+    setTimeout(function(){ curtainTo('manage'); },800);
+  }
+  /* Actualizar votación si está abierta */
+  if(document.getElementById('screen-vote').classList.contains('active')) showVoteClosed();
+  /* Actualizar transmisión si está abierta */
+  if(document.getElementById('screen-broadcast').classList.contains('active')) renderBC();
+  showNotif('¡Votación finalizada! Parejas formadas.');
+}
+
+/* ================================================================
+   PANEL DE CONTROL
+   renderControl() decide qué mostrar según el estado:
+   — Pre-votación: configuración + participantes individuales
+   — Post-votación: redirige automáticamente a gestión (manage)
+================================================================ */
+function renderControl(){
+  refreshBadge();
+  /* Si la votación ya terminó, ir directo a gestión */
+  if(S.ended){
+    go('manage');
+    return;
+  }
+  buildAdminChars();
+}
+
+function buildAdminChars(){
+  var g=document.getElementById('chars-grid'); if(!g) return;
+  var html='';
+  for(var i=0;i<S.chars.length;i++){
+    var c=S.chars[i], d=(i*.04).toFixed(2);
+    html+='<div class="char-card-a" style="animation-delay:'+d+'s">'
+      +'<div class="img-wrap" onclick="openImgModal('+c.id+')">'
+        +(c.img?'<img src="'+esc(c.img)+'">':'<span class="no-img">◈</span>')
+        +'<div class="ov">EDITAR<br>IMAGEN</div>'
+      +'</div>'
+      +'<input class="char-name-inp" value="'+esc(c.name)+'"'
+        +' oninput="S.chars['+c.id+'].name=this.value" placeholder="Nombre">'
+      +'<span class="char-num-lbl">Participante '+(c.id+1)+'</span>'
+    +'</div>';
+  }
+  g.innerHTML=html;
+}
+
+function refreshBadge(){
+  var b=document.getElementById('sbadge'); if(!b) return;
+  b.className='sbadge';
+  if(S.ended)       {b.classList.add('ended'); b.textContent='Finalizada';}
+  else if(S.active) {b.classList.add('active');b.textContent='● Activa';}
+  else              {b.textContent='Inactiva';}
+}
+function doStartVote(){
+  if(S.active){showNotif('La votación ya está activa');return;}
+  if(S.ended){showNotif('Reinicia primero la votación');return;}
+  var d=parseInt(document.getElementById('inp-dur').value);
+  if(isNaN(d)||d<5){showNotif('Duración inválida (mín. 5 seg)');return;}
+  openConfirm('Iniciar Votación','¿Iniciar la votación? Duración: '+d+' segundos.',function(){
+    S.dur=d; S.startTs=Date.now(); S.active=true; S.ended=false;
+    S.votes=[]; S.count=0; S.pairs=[]; S.solo=[]; S.eliminated=[];
+    cancelMV(); refreshBadge(); startTick();
+    showNotif('¡Votación iniciada!');
+  });
+}
+function doReset(){
+  openConfirm('Reiniciar','¿Reiniciar todo? Se borrarán votos y parejas.',function(){
+    S.startTs=null; S.active=false; S.ended=false;
+    S.votes=[]; S.count=0; S.pairs=[]; S.solo=[]; S.eliminated=[];
+    cancelMV(); refreshBadge();
+    var at=document.getElementById('a-time'); var ac=document.getElementById('a-count');
+    var bt=document.getElementById('bc-timer'); var bw=document.getElementById('bc-wait');
+    if(at) at.textContent='—'; if(ac) ac.textContent='0';
+    if(bt){bt.textContent='—';bt.classList.remove('red');} if(bw) bw.style.display='';
+    if(document.getElementById('screen-broadcast').classList.contains('active')) renderBC();
+    showNotif('Reiniciado');
+  });
+}
+function doSave(){
+  var inputs=document.querySelectorAll('.char-name-inp');
+  for(var i=0;i<inputs.length;i++){
+    if(S.chars[i]) S.chars[i].name=inputs[i].value.trim()||('Participante '+(i+1));
+  }
+  var d=parseInt(document.getElementById('inp-dur').value);
+  if(!isNaN(d)&&d>=5) S.dur=d;
+  openConfirm('Guardar','¿Guardar cambios en participantes y duración?',function(){
+    buildAdminChars(); showNotif('Cambios guardados ✦');
+  });
+}
+
+/* ================================================================
+   MODAL IMAGEN
+================================================================ */
+function openImgModal(id){
+  editId=id;
+  var lbl=document.getElementById('img-lbl'); if(lbl) lbl.textContent=S.chars[id].name||pLabel(id);
+  var ub=document.getElementById('url-box'); var ui=document.getElementById('url-inp');
+  if(ub) ub.style.display='none'; if(ui) ui.value='';
+  openOv('ov-img');
+}
+function pickFile(){
+  closeOv('ov-img');
+  setTimeout(function(){ var fi=document.getElementById('file-inp'); if(fi){fi.value='';fi.click();} },250);
+}
+(function(){
+  var fi=document.getElementById('file-inp');
+  if(fi) fi.addEventListener('change',function(){
+    var file=this.files[0]; if(!file||editId===null) return;
+    var capId=editId, reader=new FileReader();
+    reader.onload=function(e){ S.chars[capId].img=e.target.result; buildAdminChars(); showNotif('Imagen cargada ✦'); };
+    reader.readAsDataURL(file); this.value='';
+  });
+})();
+function showUrlBox(){ var b=document.getElementById('url-box'); if(b) b.style.display='block'; }
+function applyUrl(){
+  var u=(document.getElementById('url-inp').value||'').trim();
+  if(!u){showNotif('URL inválida');return;}
+  S.chars[editId].img=u; buildAdminChars(); closeOv('ov-img'); showNotif('URL aplicada');
+}
+function clearImg(){
+  if(editId===null) return;
+  S.chars[editId].img=''; buildAdminChars(); closeOv('ov-img'); showNotif('Imagen eliminada');
+}
+
+/* ================================================================
+   PANEL DE GESTIÓN POST-VOTACIÓN
+   Muestra parejas formadas con:
+   — Nombre: nombre editable del participante
+   — Acciones: eliminar individualmente, eliminar pareja, mover (⇄)
+   — Pool de solos: participantes sin pareja disponibles para mover
+================================================================ */
+function buildManage(){
+  updateManageStats();
+  buildSoloPool();
+  buildManageGrid();
+}
+
+function updateManageStats(){
+  var ap=0, ac=0;
+  for(var i=0;i<S.pairs.length;i++){
+    var p=S.pairs[i]; if(p.dead) continue;
+    ap++;
+    if(p.c1!==null) ac++;
+    if(p.c2!==null) ac++;
+  }
+  ac+=S.solo.length;
+  var sp=document.getElementById('stat-pairs');
+  var sc=document.getElementById('stat-conts');
+  if(sp) sp.textContent=ap;
+  if(sc) sc.textContent=ac;
+}
+
+function buildSoloPool(){
+  var pool=document.getElementById('solo-pool');
+  var items=document.getElementById('solo-pool-items');
+  if(!pool||!items) return;
+  if(S.solo.length===0){ pool.style.display='none'; return; }
+  pool.style.display='block';
+  var html='';
+  for(var i=0;i<S.solo.length;i++){
+    var cId=S.solo[i]; var sel=MV.on&&MV.charId===cId;
+    html+='<div class="solo-chip'+(sel?' selected-move':'')+'" onclick="soloChipClick('+cId+')">'
+      +'<div class="solo-chip-avatar">'+cImg(cId,24)+'</div>'
+      +cName(cId)
+    +'</div>';
+  }
+  items.innerHTML=html;
+}
+
+function buildManageGrid(){
+  var grid=document.getElementById('manage-grid'); if(!grid) return;
+  var html='';
+  for(var i=0;i<S.pairs.length;i++){
+    var p=S.pairs[i], col=PH[i];
+    var isTarget=MV.on&&!p.dead;
+    html+='<div class="m-pair-card'+(p.dead?' pair-elim':'')+(isTarget?' move-target':'')+'"'
+      +' style="border-color:'+col+'44">'
+      +'<div class="m-pair-hdr" style="background:'+col+'18">'
+        +'<div class="m-pair-hdr-l">'
+          +'<div class="m-pair-dot" style="background:'+col+'"></div>'
+          +'<span style="color:'+col+'">'+PL[i]+'</span>'
+        +'</div>'
+        +'<div class="m-pair-hdr-r">'
+          +(p.dead
+            ?'<span style="font-size:.62rem;color:var(--red);letter-spacing:.06em">ELIMINADA</span>'
+            :(p.c1===null&&p.c2===null)
+              ?'<button class="btn-sm btn-sm-red" onclick="doCloseEmptyPair('+i+')">✕ Cerrar pareja vacía</button>'
+              :'<button class="btn-sm btn-sm-red" onclick="doKillPair('+i+')">✕ Eliminar pareja</button>'
+          )
+        +'</div>'
+      +'</div>'
+      +'<div class="m-pair-body">'
+        +contRow(i,0,p)
+        +contRow(i,1,p)
+      +'</div>'
+    +'</div>';
+  }
+  grid.innerHTML=html;
+}
+
+function contRow(pi, slot, p){
+  var cId      = slot===0 ? p.c1 : p.c2;
+  var partnerId= slot===0 ? p.c2 : p.c1;  /* compañero/a */
+  var isSel    = MV.on && MV.charId===cId && cId!==null;
+
+  /* ── Slot vacío ── */
+  if(cId===null){
+    if(MV.on && !p.dead){
+      return '<div class="m-cont" style="border:1px dashed rgba(52,152,219,.5);background:rgba(52,152,219,.07);'
+        +'justify-content:center;color:rgba(52,152,219,.85);font-size:.8rem;cursor:pointer"'
+        +' onclick="doSlotDrop('+pi+','+slot+')">'
+        +'＋ Colocar aquí</div>';
+    }
+    /* Slot vacío sin modo mover */
+    return '<div class="m-cont" style="opacity:.2;cursor:default;justify-content:center;'
+      +'font-size:.75rem;color:var(--muted)">— slot vacío —</div>';
+  }
+
+  /* ── Participante presente ── */
+  var soloEnPar = (partnerId===null);  /* el compañero fue eliminado */
+  var statusTxt = soloEnPar ? 'Solo/a en pareja' : 'En juego';
+  var statusCls = soloEnPar ? 'solo' : 'ok';
+
+  var btns='';
+  if(!p.dead){
+    btns+='<button class="btn-sm btn-sm-red"'
+      +' onclick="event.stopPropagation();doKillCont('+pi+','+slot+')"'
+      +' title="Eliminar participante">✕</button>';
+    btns+='<button class="btn-sm btn-sm-blue"'
+      +' onclick="event.stopPropagation();doSelectMV('+pi+','+slot+','+cId+')"'
+      +' title="Mover / intercambiar">⇄</button>';
+  }
+
+  return '<div class="m-cont'+(isSel?' selected-move':'')+'"'
+    +' onclick="doContClick('+pi+','+slot+','+cId+')">'
+    +'<div class="m-cont-avatar">'+cImg(cId,42)+'</div>'
+    +'<div class="m-cont-info">'
+      +'<div class="m-cont-name">'+cName(cId)+'</div>'
+      +'<div class="m-cont-status '+statusCls+'">'+statusTxt+'</div>'
+    +'</div>'
+    +'<div class="m-cont-actions">'+btns+'</div>'
+  +'</div>';
+}
+
+/* ─── Eliminar pareja completa ─── */
+function doKillPair(i){
+  var p=S.pairs[i]; if(p.dead) return;
+  openConfirm(
+    'Eliminar Pareja',
+    '¿Estás seguro de eliminar la '+PL[i]+'? Ambos participantes quedarán eliminados.',
+    function(){
+      if(p.c1!==null){ addElim(p.c1); p.c1=null; }
+      if(p.c2!==null){ addElim(p.c2); p.c2=null; }
+      p.dead=true;
+      cancelMV(); buildManage(); syncBC();
+      showNotif(PL[i]+' eliminada');
+    }
+  );
+}
+
+/* ─── Eliminar participante individual ─────────────────────────
+   REGLA: el cuadro de pareja NUNCA se elimina automáticamente.
+   El slot queda vacío. El compañero permanece en la pareja (no
+   pasa al pool). La pareja dead solo si el admin la elimina
+   explícitamente o si ambos slots ya estaban vacíos y el admin
+   confirma el aviso de pareja vacía.
+─────────────────────────────────────────────────────────────── */
+function doKillCont(pi, slot){
+  var p=S.pairs[pi];
+  var cId=slot===0?p.c1:p.c2;
+  if(cId===null) return;
+  var nombre=cName(cId);
+  openConfirm(
+    'Eliminar Participante',
+    '¿Estás seguro de eliminar a '+nombre+'? El slot quedará vacío en la pareja.',
+    function(){
+      addElim(cId);
+      /* Vaciar solo el slot del eliminado — el compañero SE QUEDA */
+      if(slot===0) p.c1=null; else p.c2=null;
+      /* No marcamos dead automáticamente aunque quede 1 solo.
+         El admin decide si elimina la pareja. */
+      cancelMV(); buildManage(); syncBC();
+      showNotif(nombre+' eliminado/a');
+    }
+  );
+}
+
+/* ─── Seleccionar participante para mover ────────────────────
+   Abre el modo mover. El admin luego toca el destino.
+   Si el destino tiene participante → INTERCAMBIO (sin slots vacíos).
+   Si el destino es slot vacío → COLOCAR ahí.
+   Si el destino es un chip del pool → INTERCAMBIAR con pool.
+─────────────────────────────────────────────────────────────── */
+function doSelectMV(pi, slot, cId){
+  /* Segundo clic en el mismo → cancelar */
+  if(MV.on && MV.charId===cId){ cancelMV(); return; }
+  /* Confirmar intención de mover */
+  openConfirm(
+    'Mover Participante',
+    '¿Deseas mover/intercambiar a '+cName(cId)+'? Después toca el destino.',
+    function(){
+      MV.on=true; MV.charId=cId; MV.srcPair=pi; MV.srcSlot=slot;
+      var instr=document.getElementById('move-instr');
+      if(instr){
+        instr.textContent='Moviendo: '+cName(cId)
+          +' — toca un slot o participante destino. (Intercambio automático si el slot está ocupado.)';
+        instr.classList.add('show');
+      }
+      buildManageGrid(); buildSoloPool();
+    }
+  );
+}
+
+/* ─── Click en chip del pool "Participantes disponibles" ─── */
+function soloChipClick(cId){
+  /* Si ya estamos moviendo este mismo → cancelar */
+  if(MV.on && MV.charId===cId){ cancelMV(); return; }
+  if(MV.on){
+    /* El pool es el destino: mover al que está en movimiento al pool
+       El chip clicado va al slot origen (intercambio pool↔pareja) */
+    execMoveToPool(cId); return;
+  }
+  /* Sin modo mover activo → seleccionar del pool para mover */
+  openConfirm(
+    'Mover Participante',
+    '¿Deseas mover/intercambiar a '+cName(cId)+' (sin pareja)? Después toca el destino.',
+    function(){
+      MV.on=true; MV.charId=cId; MV.srcPair=-1; MV.srcSlot=-1;
+      var instr=document.getElementById('move-instr');
+      if(instr){
+        instr.textContent='Moviendo: '+cName(cId)
+          +' (sin pareja) — toca el slot o participante destino.';
+        instr.classList.add('show');
+      }
+      buildManageGrid(); buildSoloPool();
+    }
+  );
+}
+
+/* ─── Click en un participante activo en modo mover → intercambio ─── */
+function doContClick(pi, slot, cId){
+  if(!MV.on) return;
+  if(MV.charId===cId){ cancelMV(); return; }
+  execMove(pi, slot);
+}
+
+/* ─── Click en slot vacío en modo mover → colocar ahí ─── */
+function doSlotDrop(pi, slot){
+  if(!MV.on) return;
+  execMove(pi, slot);
+}
+
+/* ─── Ejecutar movimiento / intercambio ──────────────────────
+   Casos:
+   A) srcPair≥0 + destId≠null → intercambio entre parejas
+      movId → destSlot de destPair
+      destId → srcSlot de srcPair
+      Sin slots vacíos resultantes.
+
+   B) srcPair≥0 + destId=null → colocar en slot vacío
+      movId → destSlot de destPair
+      srcSlot de srcPair → null
+
+   C) srcPair=-1 (pool) + destId≠null → intercambio pool↔pareja
+      movId sale del pool → destSlot de destPair
+      destId sale de la pareja → pool
+
+   D) srcPair=-1 (pool) + destId=null → colocar en slot vacío
+      movId sale del pool → destSlot de destPair
+─────────────────────────────────────────────────────────────── */
+function execMove(destPair, destSlot){
+  var movId  = MV.charId;
+  var srcPair= MV.srcPair;
+  var srcSlot= MV.srcSlot;
+  var pDest  = S.pairs[destPair];
+  var destId = destSlot===0 ? pDest.c1 : pDest.c2;
+
+  /* Colocar movId en destino */
+  if(destSlot===0) pDest.c1=movId; else pDest.c2=movId;
+
+  if(srcPair>=0){
+    var pOrig=S.pairs[srcPair];
+    if(destId!==null){
+      /* CASO A: intercambio directo entre parejas — sin slots vacíos */
+      if(srcSlot===0) pOrig.c1=destId; else pOrig.c2=destId;
+      /* Asegurarse que destId no esté en el pool */
+      var si=S.solo.indexOf(destId); if(si>-1) S.solo.splice(si,1);
+      showNotif('Intercambio realizado ✦');
+    } else {
+      /* CASO B: slot destino vacío — simplemente colocar */
+      if(srcSlot===0) pOrig.c1=null; else pOrig.c2=null;
+      showNotif('Participante movido ✦');
+    }
+  } else {
+    /* Origen = pool */
+    var si2=S.solo.indexOf(movId); if(si2>-1) S.solo.splice(si2,1);
+    if(destId!==null){
+      /* CASO C: intercambio pool↔pareja */
+      if(S.solo.indexOf(destId)===-1) S.solo.push(destId);
+      showNotif('Intercambio con pool realizado ✦');
+    } else {
+      /* CASO D: colocar en slot vacío */
+      showNotif('Participante colocado en pareja ✦');
+    }
+  }
+
+  cancelMV(); buildManage(); syncBC();
+}
+
+/* ─── Intercambio: el movido va al pool, el chip clicado al origen ─── */
+function execMoveToPool(destChipId){
+  var movId  = MV.charId;
+  var srcPair= MV.srcPair;
+  var srcSlot= MV.srcSlot;
+
+  /* Sacar movId del pool (si estaba) y ponerlo en el pool tampoco
+     — en este caso el movId YA estaba en una pareja (srcPair≥0)
+     Lo mandamos al pool y el chip destino (destChipId) queda en pool también,
+     a menos que el admin luego lo mueva. Solo mandamos movId al pool. */
+  if(srcPair>=0){
+    var pOrig=S.pairs[srcPair];
+    if(srcSlot===0) pOrig.c1=null; else pOrig.c2=null;
+  }
+  if(S.solo.indexOf(movId)===-1) S.solo.push(movId);
+  cancelMV(); buildManage(); syncBC();
+  showNotif('Participante enviado a Disponibles');
+}
+
+/* ─── Cancelar modo mover ─── */
+function cancelMV(){
+  MV.on=false; MV.charId=null; MV.srcPair=-1; MV.srcSlot=-1;
+  var instr=document.getElementById('move-instr');
+  if(instr) instr.classList.remove('show');
+  if(document.getElementById('screen-manage') &&
+     document.getElementById('screen-manage').classList.contains('active')){
+    buildManageGrid(); buildSoloPool();
+  }
+}
+function cancelMove(){ cancelMV(); }
+
+/* ─── Registrar eliminado (solo historial; no toca la pareja) ─── */
+function addElim(cId){
+  if(cId===null) return;
+  if(S.eliminated.indexOf(cId)===-1) S.eliminated.push(cId);
+  /* Quitar del pool de disponibles si estaba */
+  var i=S.solo.indexOf(cId); if(i>-1) S.solo.splice(i,1);
+}
+
+/* ─── El admin puede cerrar una pareja con slots vacíos manualmente ──
+   Se llama desde el botón que aparece cuando ambos slots están vacíos.
+─────────────────────────────────────────────────────────────── */
+function doCloseEmptyPair(i){
+  openConfirm(
+    'Pareja vacía',
+    'Los dos slots de '+PL[i]+' están vacíos. ¿Deseas eliminar este cuadro?',
+    function(){
+      S.pairs[i].dead=true;
+      buildManage(); syncBC();
+      showNotif(PL[i]+' cerrada');
+    }
+  );
+}
+
+/* ================================================================
+   TRANSMISIÓN
+   renderBC() → dibuja la vista completa según el estado
+   syncBC()   → actualiza solo la parte dinámica post-votación
+               (llamada desde cada acción del admin)
+================================================================ */
+function renderBC(){
+  var elBCT  =document.getElementById('bc-timer');
+  var elBCW  =document.getElementById('bc-wait');
+  var elBCC  =document.getElementById('bc-count');
+  var elPairs=document.getElementById('bc-pairs');
+  var elAlive=document.getElementById('bc-alive-info');
+  var elSec  =document.getElementById('bc-section-lbl');
+  var sidebar=document.getElementById('bc-sidebar');
+
+  if(elBCC) elBCC.textContent=S.count;
+
+  if(S.ended){
+    /* Post-votación: mostrar parejas reales en tiempo real */
+    if(elBCT){ elBCT.textContent='00:00'; elBCT.classList.remove('red'); }
+    if(elBCW) elBCW.style.display='none';
+    syncBC();
+    return;
+  }
+
+  /* Votación activa / sin iniciar → misterio */
+  if(elBCW) elBCW.style.display=S.active?'none':'';
+  if(elBCT) elBCT.textContent=S.active?fmtSec(timeLeft()):'—';
+  if(elAlive) elAlive.style.display='none';
+  if(elSec) elSec.textContent='COMBINACIONES';
+  if(sidebar) sidebar.classList.remove('visible');
+  if(!elPairs) return;
+  var html='';
+  for(var i=0;i<5;i++){
+    html+='<div class="bc-pair-card floating" style="border-color:'+PH[i]+'33">'
+      +'<div class="bc-pair-hdr" style="background:'+PH[i]+'14">'
+        +'<div class="bc-pair-dot" style="background:'+PH[i]+'"></div>'
+        +'<span style="color:'+PH[i]+'">'+PL[i]+'</span>'
+      +'</div>'
+      +'<div class="bc-pair-body">'
+        +'<div class="bc-pm"><div class="bc-pm-img myst"><span class="qmark">?</span></div>'
+          +'<div class="bc-pm-name" style="opacity:.2">???</div></div>'
+        +'<div class="bc-x">&#10005;</div>'
+        +'<div class="bc-pm"><div class="bc-pm-img myst"><span class="qmark">?</span></div>'
+          +'<div class="bc-pm-name" style="opacity:.2">???</div></div>'
+      +'</div></div>';
+  }
+  elPairs.innerHTML=html;
+}
+
+function syncBC(){
+  if(!S.ended) return;
+  var elPairs  =document.getElementById('bc-pairs');
+  var elAlive  =document.getElementById('bc-alive-info');
+  var elSec    =document.getElementById('bc-section-lbl');
+  var sidebar  =document.getElementById('bc-sidebar');
+  var elimList =document.getElementById('bc-elim-list');
+
+  /* ── Sidebar de eliminados ── */
+  if(sidebar){ if(S.eliminated.length>0) sidebar.classList.add('visible'); else sidebar.classList.remove('visible'); }
+  if(elimList){
+    var eHtml='';
+    for(var e=0;e<S.eliminated.length;e++){
+      var eId=S.eliminated[e];
+      eHtml+='<div class="bc-elim-item" style="animation:slideInRight .3s ease '+(e*.06).toFixed(2)+'s both">'
+        +'<div class="bc-elim-avatar">'+cImg(eId,30)+'</div>'
+        +'<div><div class="bc-elim-name">'+cName(eId)+'</div>'
+        +'<span class="bc-elim-badge">eliminado/a</span></div>'
+      +'</div>';
+    }
+    elimList.innerHTML=eHtml;
+  }
+
+  /* ── Contadores ── */
+  var ap=0, ac=0;
+  for(var i=0;i<S.pairs.length;i++){
+    var p=S.pairs[i]; if(p.dead) continue; ap++;
+    if(p.c1!==null) ac++;
+    if(p.c2!==null) ac++;
+  }
+  ac+=S.solo.length;
+  if(elAlive){ elAlive.style.display=''; elAlive.innerHTML='Parejas activas: <strong>'+ap+'</strong>&nbsp;|&nbsp;Participantes activos: <strong>'+ac+'</strong>'; }
+  if(elSec) elSec.textContent='PAREJAS EN JUEGO';
+
+  /* ── Tarjetas de parejas activas (dead=false) ── */
+  if(!elPairs) return;
+  var html='';
+  for(var i=0;i<S.pairs.length;i++){
+    var pair=S.pairs[i];
+    if(pair.dead) continue; /* las eliminadas desaparecen completamente */
+    var n1=cName(pair.c1), n2=cName(pair.c2);
+    var img1=pair.c1!==null?cImg(pair.c1,54):'<span style="font-size:1.2rem;opacity:.18">◈</span>';
+    var img2=pair.c2!==null?cImg(pair.c2,54):'<span style="font-size:1.2rem;opacity:.18">◈</span>';
+    var del=(i*.1).toFixed(2);
+    var sb='';
+    if(pair.c1===null&&pair.c2===null) sb='<div class="bc-status-bar" style="color:#f1c40f;background:rgba(241,196,15,.08);border-top-color:rgba(241,196,15,.18)">En reconfiguración</div>';
+    else if(pair.c1===null||pair.c2===null) sb='<div class="bc-status-bar" style="color:#f1c40f;background:rgba(241,196,15,.08);border-top-color:rgba(241,196,15,.18)">Participante en movimiento</div>';
+    html+='<div class="bc-pair-card" style="border-color:'+PH[i]+'44;animation:revealCard .5s ease '+del+'s both">'
+      +'<div class="bc-pair-hdr" style="background:'+PH[i]+'16">'
+        +'<div class="bc-pair-dot" style="background:'+PH[i]+'"></div>'
+        +'<span style="color:'+PH[i]+'">'+PL[i]+'</span>'
+      +'</div>'
+      +'<div class="bc-pair-body">'
+        +'<div class="bc-pm"><div class="bc-pm-img">'+img1+'</div><div class="bc-pm-name">'+n1+'</div></div>'
+        +'<div class="bc-x">&#10005;</div>'
+        +'<div class="bc-pm"><div class="bc-pm-img">'+img2+'</div><div class="bc-pm-name">'+n2+'</div></div>'
+      +'</div>'
+      +sb
+    +'</div>';
+  }
+  elPairs.innerHTML=html;
+}
+
+/* ================================================================
+   VOTACIÓN (lógica sin cambios)
+================================================================ */
+function initVote(){
+  vSel=[];
+  for(var i=0;i<5;i++) vSel.push({c1:null,c2:null});
+  renderVote();
+}
+function renderVote(){
+  var body=document.getElementById('vote-body');
+  var foote=document.getElementById('vote-footer');
+  var bar=document.getElementById('msg-bar');
+  if(!body) return;
+  if(!S.active&&!S.ended){
+    body.innerHTML='<div class="closed-box"><div class="closed-title">Votación no iniciada</div>'
+      +'<div class="closed-sub">El administrador aún no ha iniciado la sesión</div></div>';
+    if(foote) foote.style.display='none';
+    if(bar) bar.textContent='En espera del administrador...';
+    buildPips(); return;
+  }
+  if(S.ended){ showVoteClosed(); return; }
+  if(foote) foote.style.display='flex';
+  buildPips(); buildVoteGrid(); updateMsg();
+}
+function showVoteClosed(){
+  var body=document.getElementById('vote-body');
+  var foote=document.getElementById('vote-footer');
+  var bar=document.getElementById('msg-bar');
+  if(body) body.innerHTML='<div class="closed-box"><div class="closed-title">Votación Cerrada</div>'
+    +'<div class="closed-sub">El tiempo terminó. Gracias por participar.</div></div>';
+  if(foote) foote.style.display='none';
+  if(bar) bar.textContent='La votación ha finalizado';
+  buildPips();
+}
+function buildPips(){
+  var bar=document.getElementById('pairs-bar'); if(!bar) return;
+  if(!S.active&&!S.ended){bar.innerHTML='';return;}
+  var html='';
+  for(var i=0;i<5;i++){
+    var s=vSel[i]||{c1:null,c2:null};
+    var done=s.c1!==null&&s.c2!==null, curr=!done&&activePair()===i;
+    html+='<div class="pip'+(done?' done':'')+(curr?' curr':'')+'">'
+      +'<div class="pip-dot" style="background:'+PH[i]+'"></div>'+PL[i]+'</div>';
+  }
+  bar.innerHTML=html;
+}
+function activePair(){ for(var i=0;i<5;i++){if(!vSel[i]||vSel[i].c1===null||vSel[i].c2===null) return i;} return 5; }
+function buildVoteGrid(){
+  var grid=document.getElementById('vote-grid'); if(!grid) return;
+  var html='';
+  for(var i=0;i<S.chars.length;i++){
+    var c=S.chars[i], pi=vPairOf(c.id), half=vIsHalf(c.id);
+    var cls=(pi>=0?'p'+(pi+1):'')+(half?' sel-half':'');
+    var badge=pi>=0?'<div class="pair-badge" style="background:'+PH[pi]+'">'+(pi+1)+'</div>':'';
+    var img=c.img?'<img src="'+esc(c.img)+'" alt="'+esc(c.name)+'">':'◈';
+    var d=(i*.04).toFixed(2);
+    html+='<div class="char-card-v '+cls+'" style="animation-delay:'+d+'s" onclick="pickChar('+c.id+')">'
+      +badge+'<div class="char-avatar">'+img+'</div>'
+      +'<div class="char-name-v">'+esc(c.name)+'</div>'
+      +'<div class="char-num-v">N&#186; '+(c.id+1)+'</div>'
+    +'</div>';
+  }
+  grid.innerHTML=html;
+}
+function vPairOf(id){ for(var i=0;i<5;i++){var s=vSel[i];if(!s)continue;if((s.c1===id&&s.c2!==null)||s.c2===id)return i;} return -1; }
+function vIsHalf(id){ for(var i=0;i<5;i++){if(vSel[i]&&vSel[i].c1===id&&vSel[i].c2===null)return true;} return false; }
+function pickChar(id){
+  if(!S.active||S.ended) return;
+  var ai=activePair(); if(ai>=5){updateMsg();return;}
+  var sel=vSel[ai];
+  if(sel.c1===id){sel.c1=null;refreshVote();return;}
+  var ep=vPairOf(id);
+  if(ep>=0){var ps=vSel[ep];if(ps.c1===id){ps.c1=ps.c2;ps.c2=null;}else{ps.c2=null;}refreshVote();return;}
+  if(vIsHalf(id)){sel.c1=null;refreshVote();return;}
+  if(sel.c1===null) sel.c1=id; else sel.c2=id;
+  refreshVote();
+}
+function refreshVote(){buildPips();buildVoteGrid();updateMsg();}
+function updateMsg(){
+  var bar=document.getElementById('msg-bar'); if(!bar) return;
+  var ai=activePair();
+  if(ai>=5){bar.textContent='¡Todas las parejas seleccionadas! Registra tu voto.';return;}
+  bar.textContent=vSel[ai].c1===null
+    ?'Selecciona dos participantes para la '+PL[ai]
+    :'Selecciona el segundo participante de la '+PL[ai];
+}
+function submitVote(){
+  if(!S.active||S.ended){showNotif('La votación no está activa');return;}
+  for(var i=0;i<5;i++){if(!vSel[i]||vSel[i].c1===null||vSel[i].c2===null){showNotif('Completa las 5 parejas');return;}}
+  var snap=[]; for(var i=0;i<5;i++) snap.push({c1:vSel[i].c1,c2:vSel[i].c2});
+  S.votes.push(snap); S.count++;
+  var body=document.getElementById('vote-body');
+  var foote=document.getElementById('vote-footer');
+  var pbar=document.getElementById('pairs-bar');
+  var bar=document.getElementById('msg-bar');
+  if(body) body.innerHTML='<div class="success-box"><span class="success-icon">✦</span>'
+    +'<div class="success-title">¡Voto Registrado!</div>'
+    +'<div class="success-sub">Tu selección ha sido guardada.<br>¡Gracias por participar!</div></div>';
+  if(foote) foote.style.display='none';
+  if(pbar) pbar.innerHTML='';
+  if(bar) bar.textContent='Votación completada';
+}
+
+/* ================================================================
+   CÁLCULO DE RESULTADOS
+================================================================ */
+function computeResults(){
+  var res=[];
+  for(var pos=0;pos<5;pos++){
+    var tally={};
+    for(var v=0;v<S.votes.length;v++){
+      var p=S.votes[v][pos];
+      if(!p||p.c1===null||p.c2===null) continue;
+      var key=[p.c1,p.c2].sort().join('-');
+      tally[key]=(tally[key]||0)+1;
+    }
+    var best=null, bestN=-1;
+    for(var k in tally){ if(tally[k]>bestN){bestN=tally[k];best=k;} }
+    if(best){ var pts=best.split('-'); res.push({c1:parseInt(pts[0]),c2:parseInt(pts[1])}); }
+    else res.push(null);
+  }
+  return res;
+}
+
+/* ================================================================
+   MODALES
+================================================================ */
+function openOv(id) { document.getElementById(id).classList.add('open'); }
+function closeOv(id){ document.getElementById(id).classList.remove('open'); }
+function openConfirm(title,msg,cb){
+  document.getElementById('c-title').textContent=title;
+  document.getElementById('c-msg').textContent=msg;
+  cbYes=cb; openOv('ov-confirm');
+}
+function confirmYes(){ closeOv('ov-confirm'); if(typeof cbYes==='function'){var f=cbYes;cbYes=null;f();} }
+
+/* ================================================================
+   TOAST
+================================================================ */
+function showNotif(msg){
+  var el=document.getElementById('notif');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(nTimer);
+  nTimer=setTimeout(function(){el.classList.remove('show');},2800);
+}
+
+/* ================================================================
+   COMUNICACIÓN DE ALTURA CON WIX
+================================================================ */
+function notifyWixHeight(){
+  try{
+    var h=Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      600
+    );
+    if(window.parent && window.parent !== window){
+      window.parent.postMessage({type:"wix-iframe-height",height:h},"*");
+      window.parent.postMessage(JSON.stringify({type:"height",value:h}),"*");
+    }
+  }catch(e){ console.warn("Wix postMessage falló",e); }
+}
+
+/* ================================================================
+   ARRANQUE — envuelto en DOMContentLoaded para garantizar que el
+   DOM esté completamente cargado antes de ejecutar cualquier cosa.
+   Esto soluciona la pantalla negra en Wix, iframes y plataformas
+   web que cargan el HTML de forma diferida.
+================================================================ */
+function init(){
+  console.log("Sistema de Votación cargado correctamente");
+  startTick();
+  buildAdminChars();
+  /* Pantalla principal ya tiene active+visible en el HTML;
+     _show la "re-activa" limpiamente por si hubo algún race. */
+  _show('main');
+  /* Comunicación de altura con Wix */
+  if(typeof notifyWixHeight==='function'){
+    notifyWixHeight();
+    window.addEventListener("resize", notifyWixHeight);
+    setInterval(notifyWixHeight, 1200);
+  }
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  /* El DOM ya estaba listo (script cargado de forma diferida) */
+  init();
+}
+</script>
+
+<!-- ══ FALLBACK ANTI-PANTALLA-NEGRA ══
+     Si el script principal falla, este bloque independiente
+     fuerza la visibilidad de screen-main. -->
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+  var main=document.getElementById("screen-main");
+  if(main){
+    main.classList.add("active","visible");
+  }
+  /* Si la función go existe, confirmar arranque */
+  if(typeof init==="function" && document.readyState!=="loading"){
+    try{ init(); }catch(e){ console.error("init() falló:",e); }
+  }
+});
+</script>
+
+</div><!-- /wix-wrap -->
+</body>
+</html>
